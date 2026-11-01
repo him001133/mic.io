@@ -20,7 +20,14 @@ import {
 } from "@/features/settings/model-license-contract";
 export { joinApiPath } from "../../../../shared/web-api-routing";
 
-type ApiBaseWindow = Window & { __OMNIVOICE_API_BASE__?: string };
+type ApiBaseWindow = Window & {
+  __OMNIVOICE_API_BASE__?: string;
+  /** Set by Cloudflare Workers `vars.BACKEND_ORIGIN` when the frontend is
+   * served from Cloudflare Workers Assets. The Worker proxies `/api/*` to
+   * this origin, so the browser should target the same origin (same-site,
+   * no CORS preflight). */
+  __CLOUDFLARE_BACKEND_ORIGIN__?: string;
+};
 
 export function resolveApiBase(
   webDeployment: boolean,
@@ -28,6 +35,17 @@ export function resolveApiBase(
   win?: ApiBaseWindow,
 ): string {
   if (!webDeployment || dev) return "/api";
+  // Cloudflare Workers deployment: the Worker (`worker/index.ts`) injects
+  // BACKEND_ORIGIN as a runtime var and the browser should hit the same origin
+  // the Worker proxies to (same-site, no CORS preflight).
+  if (typeof window !== 'undefined') {
+    const cfOrigin = window.__CLOUDFLARE_BACKEND_ORIGIN__;
+    if (typeof cfOrigin === 'string' && cfOrigin.trim()) {
+      return cfOrigin.replace(/^\s+|\s+$/g, '').replace(/\/+$/, '');
+    }
+  }
+  // Docker / reverse-proxy: the backend injects this into index.html from
+  // OMNIVOICE_PUBLIC_API_BASE at serve time.
   const runtime = win?.__OMNIVOICE_API_BASE__?.trim();
   return runtime ? runtime.replace(/\/+$/, "") : "";
 }

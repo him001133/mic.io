@@ -221,6 +221,32 @@ describe("deployment API base", () => {
     );
   });
 
+  it("prefers the Cloudflare Worker BACKEND_ORIGIN over the Docker override", () => {
+    const win = {
+      __CLOUDFLARE_BACKEND_ORIGIN__: "https://api.voice.example",
+      __OMNIVOICE_API_BASE__: "https://voice.example/studio/",
+    } as Window & {
+      __CLOUDFLARE_BACKEND_ORIGIN__?: string;
+      __OMNIVOICE_API_BASE__?: string;
+    };
+    expect(resolveApiBase(true, false, win)).toBe(
+      "https://api.voice.example",
+    );
+  });
+
+  it("falls back to the Docker override when Cloudflare origin is empty", () => {
+    const win = {
+      __CLOUDFLARE_BACKEND_ORIGIN__: "",
+      __OMNIVOICE_API_BASE__: "https://voice.example/studio/",
+    } as Window & {
+      __CLOUDFLARE_BACKEND_ORIGIN__?: string;
+      __OMNIVOICE_API_BASE__?: string;
+    };
+    expect(resolveApiBase(true, false, win)).toBe(
+      "https://voice.example/studio",
+    );
+  });
+
   it("keeps transport prefixes separate from logical /api routes", () => {
     expect(joinApiPath("https://voice.example/studio", "/engines")).toBe(
       "https://voice.example/studio/engines",

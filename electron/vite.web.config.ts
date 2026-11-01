@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
+import { cloudflare } from '@cloudflare/vite-plugin';
 import { defineConfig } from 'vite';
 import { rewriteDevApiProxyPath } from './src/shared/web-api-routing.ts';
 import { DEFAULT_BACKEND_PORT, DEFAULT_WEB_PORT, PRODUCT_NAME } from '../config/app-config.mjs';
@@ -36,6 +37,14 @@ export default defineConfig({
         });
       },
     },
+    // Cloudflare Workers deployment: the client build is served from Workers
+    // Assets and the API proxy worker lives in worker/index.ts. This plugin
+    // only activates in the "worker" Vite environment used by the Cloudflare
+    // build/preview commands — the default web dev server keeps using the
+    // local Python backend proxy below.
+    cloudflare({
+      viteEnvironment: { name: 'worker' },
+    }),
   ],
   define: {
     __APP_VERSION__: JSON.stringify(version),
@@ -51,6 +60,14 @@ export default defineConfig({
     dedupe: ['react', 'react-dom'],
   },
   optimizeDeps: { exclude: ['@scalar/api-reference-react'] },
+  environments: {
+    worker: {
+      build: {
+        outDir: webDist,
+        rollupOptions: { input: resolve(root, 'index.html') },
+      },
+    },
+  },
   server: {
     host: 'localhost',
     // Same name the backend reads for its CORS/CSRF allow-list (core/csrf.py);

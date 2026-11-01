@@ -34,6 +34,11 @@ declare global {
     /** Runtime API base injected into index.html by the backend from
      *  OMNIVOICE_PUBLIC_API_BASE (Docker / reverse-proxy deployments). */
     __OMNIVOICE_API_BASE__?: string;
+    /** Set by Cloudflare Workers `vars.BACKEND_ORIGIN` when the frontend is
+     * served from Cloudflare Workers Assets. The Worker proxies `/api/*` to
+     * this origin, so the browser should target the same origin (same-site,
+     * no CORS preflight). */
+    __CLOUDFLARE_BACKEND_ORIGIN__?: string;
   }
 }
 
@@ -67,8 +72,17 @@ function _readEnvOverride(): string | undefined {
 }
 
 export function getApiBase(): string {
-  // 0. Runtime override injected by the backend (Docker/proxy) wins over
-  //    everything — it's the only knob a prebuilt image can turn at run time.
+  // 0. Cloudflare Workers deployment: the Worker injects BACKEND_ORIGIN as a
+  //    runtime var and the browser should hit the same origin the Worker
+  //    proxies to (same-site, no CORS preflight).
+  if (typeof window !== 'undefined') {
+    const cfOrigin = window.__CLOUDFLARE_BACKEND_ORIGIN__;
+    if (typeof cfOrigin === 'string' && cfOrigin.trim()) {
+      return stripTrailingSlash(cfOrigin);
+    }
+  }
+  // 1. Runtime override injected by the backend (Docker/proxy) wins over
+  //    everything else — it's the only knob a prebuilt image can turn at run time.
   if (typeof window !== 'undefined') {
     const runtime = window.__OMNIVOICE_API_BASE__;
     if (typeof runtime === 'string' && runtime) {

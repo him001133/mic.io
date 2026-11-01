@@ -1,0 +1,30 @@
+# VoiceStudio Backend Worker for Cloudflare Workers (Python runtime)
+# 
+# This is a lightweight worker that handles basic API routes.
+# For full ML functionality, use the external backend service.
+#
+# Deploy with: wrangler deploy
+# Preview with: wrangler dev
+
+name = "voicestudio-backend"
+main = "./worker/index.py"
+compatibility_date = "2026-10-31"
+
+# Python runtime support (requires Cloudflare Workers with Python)
+[system_env]
+PYTHON_VERSION = "3.11"
+
+# Environment variables
+# Set BACKEND_ORIGIN to your external backend service URL
+# This worker proxies requests that need ML processing
+[vars]
+BACKEND_ORIGIN = ""
+
+# Bindings for R2 storage (for audio file storage if needed)
+# [[r2_buckets]]
+# binding = "AUDIO_STORAGE"
+# bucket_name = "voicestudio-audio"
+
+# [[r2_buckets]]
+# binding = "MODEL_CACHE"
+# bucket_name = "voicestudio-models"

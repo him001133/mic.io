@@ -17,6 +17,9 @@
     "locale:check": "node tests/locale-encoding.mjs && node tests/locale-source-keys.mjs && node tests/locale-coverage.mjs",
     "build": "bun run locale:check && electron-vite build",
     "build:web": "bun run locale:check && vite build --config vite.web.config.ts",
+    "build:cf": "bun run locale:check && vite build --config vite.web.config.ts --mode worker",
+    "preview:cf": "bunx wrangler pages dev electron/frontend/dist --port 5173",
+    "deploy:cf": "npx wrangler pages deploy electron/frontend/dist",
     "dev:web": "vite --config vite.web.config.ts",
     "preview": "node scripts/dev.mjs preview",
     "start": "node scripts/dev.mjs preview",
@@ -34,7 +37,10 @@
     "check": "vp check",
     "dist": "bun run build:web && electron-vite build && node tests/packaging-contract.mjs && electron-builder --config electron-builder.config.mjs && node --input-type=module -e \"if (process.platform === 'linux') await import('./scripts/embed-appimage-update.mjs')\" && node tests/update-package-contract.mjs",
     "dist:dir": "bun run build:web && electron-vite build && node tests/packaging-contract.mjs && electron-builder --config electron-builder.config.mjs --dir",
-    "ui:add": "shadcn add"
+    "ui:add": "shadcn add",
+    "build:cf:bun": "bunx vite build --config vite.web.config.ts --mode worker",
+    "deploy:cf:backend": "cd ../cloudflare/backend && npx wrangler deploy",
+    "deploy:cf:all": "bun run deploy:cf && cd ../cloudflare/backend && npx wrangler deploy"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
@@ -57,9 +63,9 @@
     "@tanstack/react-form": "^1.33.5",
     "@tanstack/react-pacer": "^0.23.0",
     "@tanstack/react-query": "^5.102.8",
-    "@tanstack/react-table": "^8.21.3",
     "@tanstack/react-router": "^1.170.36",
     "@tanstack/react-store": "^0.11.1",
+    "@tanstack/react-table": "^8.21.3",
     "@tanstack/react-virtual": "^3.14.13",
     "@tanstack/store": "^0.11.1",
     "@vidstack/react": "1.15.6",
@@ -92,7 +98,10 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^2.0.0-beta.v.8",
+    "@cloudflare/workers-types": "^5.20261031.1",
     "@tailwindcss/vite": "^4.3.3",
+    "@tanstack/router-core": "1.171.30",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
     "@types/node": "^24.13.4",
@@ -103,6 +112,8 @@
     "electron": "^44.3.0",
     "electron-builder": "^26.15.3",
     "electron-vite": "6.0.0-beta.1",
+    "enhanced-resolve": "^5.26.0",
+    "fdir": "^6.5.0",
     "jsdom": "^30.0.1",
     "tailwindcss": "^4.3.3",
     "typescript": "^7.0.2",

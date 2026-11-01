@@ -24,6 +24,7 @@ describe('apiBase.getApiBase', () => {
   });
 
   afterEach(() => {
+    delete (window as Window).__CLOUDFLARE_BACKEND_ORIGIN__;
     delete (window as Window).__OMNIVOICE_API_BASE__;
     if (originalTauriInternals === undefined) {
       delete (window as Window).__TAURI_INTERNALS__;
@@ -72,6 +73,28 @@ describe('apiBase.getApiBase', () => {
     const mod = await import('./apiBase');
     mod._setEnvOverrideForTesting('http://10.0.0.5:3900');
     expect(mod.getApiBase()).toBe('https://api.example.com'); // trailing slash stripped
+    mod._setEnvOverrideForTesting(undefined);
+  });
+
+  it('prefers Cloudflare Workers BACKEND_ORIGIN over Docker override', async () => {
+    (window as Window).__TAURI_INTERNALS__ = {};
+    (window as Window).__CLOUDFLARE_BACKEND_ORIGIN__ = 'https://api.voice.example';
+    (window as Window).__OMNIVOICE_API_BASE__ = 'https://api.example.com/';
+    vi.resetModules();
+    const mod = await import('./apiBase');
+    mod._setEnvOverrideForTesting('http://10.0.0.5:3900');
+    expect(mod.getApiBase()).toBe('https://api.voice.example');
+    mod._setEnvOverrideForTesting(undefined);
+  });
+
+  it('falls back to Docker override when Cloudflare origin is empty', async () => {
+    (window as Window).__TAURI_INTERNALS__ = {};
+    (window as Window).__CLOUDFLARE_BACKEND_ORIGIN__ = '';
+    (window as Window).__OMNIVOICE_API_BASE__ = 'https://api.example.com/';
+    vi.resetModules();
+    const mod = await import('./apiBase');
+    mod._setEnvOverrideForTesting('http://10.0.0.5:3900');
+    expect(mod.getApiBase()).toBe('https://api.example.com');
     mod._setEnvOverrideForTesting(undefined);
   });
 
